@@ -1,9 +1,18 @@
-import React from 'react'
+"use client";
+
+import React from "react";
 
 const SearchBar = () => {
-  return (
-    <div>SearchBar</div>
-  )
-}
+  const handleSubmit = () => {};
 
-export default SearchBar
+  return (
+    <form className="flex flex-wrap gap-4 mt-12 " onSubmit={handleSubmit}>
+      <input type="text" placeholder="Enter Product Link" className="searchbar-input"/>
+      <button type="submit" className="searchbar-btn">
+        Search
+      </button>
+    </form>
+  );
+};
+
+export default SearchBar;
