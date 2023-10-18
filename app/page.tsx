@@ -6,7 +6,7 @@ import React from "react";
 const home = () => {
   return (
     <>
-      <section className="px-6 md:px-20 py-24 ">
+      <section className="px-6 md:px-20 py-14 ">
         <div className="flex max-xl:flex-col gap-16">
           <div className="flex flex-col justify-center">
             <p className="small-text">
