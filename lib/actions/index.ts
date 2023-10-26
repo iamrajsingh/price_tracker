@@ -5,6 +5,7 @@ import { connectToDB } from "../mongoose";
 import { scrapedAmazonProduct } from "../scraper";
 import { getAveragePrice, getHighestPrice, getLowestPrice } from "../utils";
 
+// Scrape and store product to the Database
 export async function scrapeAndStoreproduct(productUrl: string) {
   if (!productUrl) return;
 
@@ -50,5 +51,48 @@ export async function scrapeAndStoreproduct(productUrl: string) {
     revalidatePath(`/products/${newProduct._id}`)
   } catch (error: any) {
     throw new Error("Failed to create/update product: ", error.message);
+  }
+}
+
+
+// get prouduct by id
+export async function getProductById(productId: string){
+try {
+  connectToDB();
+  const product = await Product.findOne({_id: productId});
+  if(!product) return;
+
+  return product;
+} catch (error:any) {
+  throw new Error("failed to get product by Id: ", error.message)
+}
+}
+
+// Get all products
+export async function getAllProducts(){
+  try {
+    connectToDB();
+    const products = await Product.find();
+    return products;
+  } catch (error:any) {
+    throw new Error("Error while fetching all the products ", error.message);
+  }
+}
+
+// Show similar product
+export async function getSimilarProduct(productId: string){
+  try {
+    connectToDB();
+    const currentProduct = await Product.findById(productId);
+
+    if(!currentProduct) return null;
+
+    const similarProduct = await Product.find({
+      _id: {$ne: productId}
+    }).limit(3);
+
+    return similarProduct;
+  } catch (error:any) {
+    throw new Error("Error while fetching all the products ", error.message);
   }
 }
