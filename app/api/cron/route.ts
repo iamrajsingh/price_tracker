@@ -1,73 +1,87 @@
 import Product from "@/lib/models/product.model";
-import { connectToDB } from "@/lib/mongoose"
+import { connectToDB } from "@/lib/mongoose";
 import { generateEmailBody, sendEmail } from "@/lib/nodemailer";
 import { scrapedAmazonProduct } from "@/lib/scraper";
-import { getAveragePrice, getEmailNotifType, getHighestPrice, getLowestPrice } from "@/lib/utils";
+import {
+  getAveragePrice,
+  getEmailNotifType,
+  getHighestPrice,
+  getLowestPrice,
+} from "@/lib/utils";
 import { NextResponse } from "next/server";
 
-export async function GET(){
-    try {
-        connectToDB();
+export const maxDuration = 300;
+export const dynamic = 'force-dynamic'
+export const revalidate = 0;
 
-        const products = await Product.find({});
+export async function GET() {
+  try {
+    connectToDB();
 
-        if(!products) throw new Error("No products found");
+    const products = await Product.find({});
 
-        // 1. Scrape Latest product details and update database
-        const updatedProducts = await Promise.all(
-            products.map(async (currentProduct) => {
-                const scrapedProduct = await scrapedAmazonProduct(currentProduct.url)
+    if (!products) throw new Error("No products found");
 
-                if(!scrapedProduct) throw new Error("No Product Found");
+    // 1. Scrape Latest product details and update database
+    const updatedProducts = await Promise.all(
+      products.map(async (currentProduct) => {
+        const scrapedProduct = await scrapedAmazonProduct(currentProduct.url);
 
-                const updatedPriceHistory = [
-                    ...currentProduct.priceHistory,
-                    {
-                      price: scrapedProduct.currentPrice,
-                    },
-                  ];
-            
-                const product = {
-                    ...currentProduct,
-                    priceHistory: updatedPriceHistory,
-                    lowestPrice: getLowestPrice(updatedPriceHistory),
-                    highestPrice: getHighestPrice(updatedPriceHistory),
-                    averagePrice: getAveragePrice(updatedPriceHistory),
-                  };
-               
-            
-                const updatedProduct = await Product.findOneAndUpdate(
-                  {
-                    url: scrapedProduct.url,
-                  },
-                  product,
-                );
+        if (!scrapedProduct) throw new Error("No Product Found");
 
-                // 2. Check each products status and send email accordingly
-                const emailNotifType = getEmailNotifType(scrapedProduct, currentProduct)
+        const updatedPriceHistory = [
+          ...currentProduct.priceHistory,
+          {
+            price: scrapedProduct.currentPrice,
+          },
+        ];
 
-                if(emailNotifType && updatedProduct.user.length > 0){
-                    const productInfo = {
-                        title: updatedProduct.title,
-                        url: updatedProduct.url,
-                        image: updatedProduct.image
-                    }
+        const product = {
+          ...currentProduct,
+          priceHistory: updatedPriceHistory,
+          lowestPrice: getLowestPrice(updatedPriceHistory),
+          highestPrice: getHighestPrice(updatedPriceHistory),
+          averagePrice: getAveragePrice(updatedPriceHistory),
+        };
 
-                    const emailContent = await generateEmailBody(productInfo, emailNotifType);
+        const updatedProduct = await Product.findOneAndUpdate(
+          {
+            url: product.url,
+          },
+          product
+        );
 
-                    const userEmails = updatedProduct.user.map((user: any) => user.email)
+        // 2. Check each products status and send email accordingly
+        const emailNotifType = getEmailNotifType(
+          scrapedProduct,
+          currentProduct
+        );
 
-                    await sendEmail(emailContent, userEmails);
-                }
-                return updatedProduct;
-            }
-        ))
+        if (emailNotifType && updatedProduct.user.length > 0) {
+          const productInfo = {
+            title: updatedProduct.title,
+            url: updatedProduct.url,
+            image: updatedProduct.image,
+          };
 
-        return NextResponse.json({
-            message: "Ok",
-            data: updatedProducts
-        })
-    } catch (error: any) {
-        throw new Error(`Error in GET ${error}`)
-    }
+          const emailContent = await generateEmailBody(
+            productInfo,
+            emailNotifType
+          );
+
+          const userEmails = updatedProduct.user.map((user: any) => user.email);
+
+          await sendEmail(emailContent, userEmails);
+        }
+        return updatedProduct;
+      })
+    );
+
+    return NextResponse.json({
+      message: "Ok",
+      data: updatedProducts,
+    });
+  } catch (error: any) {
+    throw new Error(`Error in GET ${error}`);
+  }
 }
