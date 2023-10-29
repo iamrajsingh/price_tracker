@@ -14,7 +14,7 @@ export const maxDuration = 10;
 export const dynamic = 'force-dynamic'
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     connectToDB();
 
@@ -82,6 +82,6 @@ export async function GET() {
       data: updatedProducts,
     });
   } catch (error: any) {
-    throw new Error(`Error in GET ${error}`);
+    throw new Error(`Error in GET ${error.message}`);
   }
 }

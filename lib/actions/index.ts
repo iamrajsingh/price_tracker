@@ -71,13 +71,15 @@ try {
 }
 
 // Get all products
-export async function getAllProducts(){
+export async function getAllProducts() {
   try {
     connectToDB();
+
     const products = await Product.find();
+
     return products;
-  } catch (error:any) {
-    throw new Error("Error while fetching all the products ", error.message);
+  } catch (error) {
+    console.log(error);
   }
 }
 
