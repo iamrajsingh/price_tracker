@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 
 const home = async () => {
 
-  let allProducts = await getAllProducts();
+  const allProducts = await getAllProducts();
 
   return (
     <>
